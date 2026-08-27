@@ -1,0 +1,16 @@
+.env
+*.db
+instance/
+Environment/
+.deps/
+.venv/
+.venv2/
+__pycache__/
+.pytest_cache/
+.pytest-tmp/
+tests/_tmp/
+pytest-cache-files-*/
+*.pyc
+data/faiss/*
+!data/faiss/.gitkeep
+agent_transcripts/*.log
