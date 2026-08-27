@@ -121,6 +121,13 @@ pytest
 Unit tests do not require live Groq, Ollama, FAISS index files, or PostgreSQL.
 `pytest.ini` keeps pytest temp/cache files inside the workspace to avoid host temp-directory permission issues.
 
+Latest local verification:
+
+```text
+python -m pytest tests
+9 passed
+```
+
 ## Manual UI Test Plan
 
 1. Start PostgreSQL and the Flask app.
