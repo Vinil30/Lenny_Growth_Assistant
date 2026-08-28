@@ -218,6 +218,12 @@ button:active { transform: scale(.97); }
   background: var(--teal-tint); border-color: #cde7de;
 }
 .message.assistant { align-self: flex-start; }
+.loading-message {
+  width: min(760px, 100%);
+  min-height: 54px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
 
 .avatar {
   flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;

@@ -12,7 +12,7 @@ Routes only validate requests and serialize responses. `services.chat.ChatServic
 - `chat_messages`: session id, role, content, citations, timings, timestamp.
 - `artifacts`: session id, title, kind, sanitized/renderable content, timestamp.
 
-SQLAlchemy is used for parameterized database access and migrations are intentionally omitted for assignment simplicity.
+SQLAlchemy is used for parameterized database access. SQLite is the default deployment database to keep Render setup to one web service; PostgreSQL can still be used by setting `DATABASE_URL`.
 
 ## API Endpoints
 
@@ -70,7 +70,7 @@ HTML artifacts are sanitized and rendered in `<iframe sandbox="">`; scripts, ifr
 
 ## Deployment Topology
 
-Render deployment uses a Python web service, Gunicorn, and environment variables. Local development can use SQLite for speed or PostgreSQL by setting `DATABASE_URL`.
+Render deployment uses one Python web service, Gunicorn, SQLite, and environment variables. PostgreSQL remains optional by setting `DATABASE_URL`.
 
 ## Observability
 

@@ -7,7 +7,7 @@ A Flask RAG assistant for Lenny's Podcast transcripts. It ingests the provided M
 - `routes/`: thin Flask API layer for health, sessions, chat, and artifacts.
 - `services/`: application services for chat orchestration, LLM providers, and artifact safety.
 - `rag/`: all parsing, semantic chunking, embeddings, FAISS, BM25, query rewriting, HyDE, RRF, reranking, and context expansion.
-- `models/`: PostgreSQL persistence for sessions, messages, and artifacts.
+- `models/`: SQLite persistence for sessions, messages, and artifacts by default.
 - `templates/` and `static/`: simple responsive UI, no heavy frontend framework.
 
 The original DOCX names FastAPI and example cloud providers, while the implementation brief explicitly requires Flask and Groq's OpenAI-compatible API. This submission follows the newer implementation brief and documents that as an assumption.
@@ -39,7 +39,7 @@ ollama serve
 
 Key variables in `.env`:
 
-- `DATABASE_URL`: PostgreSQL connection string.
+- `DATABASE_URL`: defaults to `sqlite:///data/app.db` for a single-service demo.
 - `LLM_PROVIDER`: `ollama`, `groq`, or `mock`.
 - `GROQ_API_KEY`, `GROQ_BASE_URL`, `GROQ_FAST_MODEL`, `GROQ_MAIN_MODEL`.
 - `OLLAMA_BASE_URL`, `OLLAMA_FAST_MODEL`, `OLLAMA_MAIN_MODEL`.
@@ -67,11 +67,13 @@ Open [http://localhost:5000](http://localhost:5000).
 
 ## Render Deploy
 
-This repo includes `render.yaml`. On Render, use:
+This repo includes `render.yaml`. On Render, use one Web Service only:
 
 - Build command: `pip install -r requirements.txt && python -m rag.ingestion`
 - Start command: `gunicorn app:app`
-- Environment variables: `DATABASE_URL`, `GROQ_API_KEY`, `GROQ_FAST_MODEL`, `GROQ_MAIN_MODEL`
+- Environment variables: `GROQ_API_KEY`, `GROQ_FAST_MODEL`, `GROQ_MAIN_MODEL`
+
+No separate Render PostgreSQL service is required for the simple demo setup. Sessions are stored in SQLite at `data/app.db`; this is easiest for evaluation, but redeploys may reset local app storage.
 
 Render's Flask guide recommends Gunicorn with `gunicorn app:app`.
 
@@ -130,7 +132,7 @@ python -m pytest tests
 
 ## Manual UI Test Plan
 
-1. Start PostgreSQL and the Flask app.
+1. Start the Flask app.
 2. Run ingestion.
 3. Open the UI and create a new conversation.
 4. Ask: `How should startups think about hiring executives?`
@@ -146,4 +148,4 @@ python -m pytest tests
 - Missing FAISS index: run `python -m rag.ingestion`.
 - Ollama connection failure: run `ollama serve` and pull the configured models.
 - Groq failure: verify `GROQ_API_KEY` and configured model names.
-- Database failure: verify `DATABASE_URL`. Local default is SQLite; Render should use a Render Postgres URL.
+- Database failure: verify `DATABASE_URL`. The simple default is SQLite at `sqlite:///data/app.db`.

@@ -20,7 +20,7 @@ services:
       - key: DB_CONNECT_TIMEOUT_SECONDS
         value: 3
       - key: DATABASE_URL
-        sync: false
+        value: sqlite:///data/app.db
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_FAST_MODEL

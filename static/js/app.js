@@ -105,7 +105,7 @@ function renderMessage(role, content, citations = []) {
 
 function showThinking() {
   const el = document.createElement("article");
-  el.className = "message assistant";
+  el.className = "message assistant loading-message";
   el.innerHTML = `
     <div class="avatar">${avatarSVG("assistant")}</div>
     <div class="msg-body">
