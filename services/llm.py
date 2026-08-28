@@ -25,11 +25,17 @@ class GroqProvider(LLMProvider):
         res = requests.post(
             f"{settings.groq_base_url.rstrip('/')}/chat/completions",
             headers={"Authorization": f"Bearer {settings.groq_api_key}", "Content-Type": "application/json"},
-            json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": temperature, "max_tokens": max_tokens},
+            json={
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": temperature,
+                "max_completion_tokens": max_tokens,
+            },
             timeout=settings.request_timeout_seconds,
         )
         if res.status_code >= 400:
-            raise LLMError(f"Groq request failed: {res.status_code}")
+            detail = _response_error_detail(res)
+            raise LLMError(f"Groq request failed: {res.status_code}{detail}")
         return res.json()["choices"][0]["message"]["content"]
 
 
@@ -54,6 +60,17 @@ class MockProvider(LLMProvider):
 
     def generate(self, prompt, fast=False, temperature=0.2, max_tokens=900):
         return "Mock response grounded in the supplied context."
+
+
+def _response_error_detail(response) -> str:
+    try:
+        message = response.json().get("error", {}).get("message", "")
+    except ValueError:
+        message = response.text
+    message = (message or "").strip()
+    if not message:
+        return ""
+    return f" - {message[:240]}"
 
 
 def get_llm_provider():

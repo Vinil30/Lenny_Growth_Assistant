@@ -84,11 +84,11 @@ Set:
 ```env
 LLM_PROVIDER=groq
 GROQ_API_KEY=...
-GROQ_FAST_MODEL=...
-GROQ_MAIN_MODEL=...
+GROQ_FAST_MODEL=openai/gpt-oss-20b
+GROQ_MAIN_MODEL=openai/gpt-oss-120b
 ```
 
-Groq is called through `/openai/v1/chat/completions`; model names are not hardcoded.
+Groq is called through `/openai/v1/chat/completions`. For local development, copy `.env.example` to `.env` and put the real API key in `.env`; `.env.example` is only a template and should not contain secrets.
 
 ## Ollama Mode
 
@@ -147,5 +147,5 @@ python -m pytest tests
 
 - Missing FAISS index: run `python -m rag.ingestion`.
 - Ollama connection failure: run `ollama serve` and pull the configured models.
-- Groq failure: verify `GROQ_API_KEY` and configured model names.
+- Groq failure: verify `GROQ_API_KEY` and configured model names. A `404` usually means the API key works but the configured model ID is unavailable or misspelled.
 - Database failure: verify `DATABASE_URL`. The simple local default is SQLite at `sqlite:///data/app.db`; Render should use `sqlite:////tmp/lenny_growth/app.db`.

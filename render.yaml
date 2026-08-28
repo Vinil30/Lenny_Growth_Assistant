@@ -24,6 +24,6 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_FAST_MODEL
-        sync: false
+        value: openai/gpt-oss-20b
       - key: GROQ_MAIN_MODEL
-        sync: false
+        value: openai/gpt-oss-120b
