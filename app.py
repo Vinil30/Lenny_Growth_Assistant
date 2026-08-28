@@ -1,4 +1,6 @@
 from flask import Flask, render_template, jsonify
+from pathlib import Path
+from urllib.parse import urlparse
 from models import db
 from routes import register_routes
 from utils.config import settings
@@ -17,6 +19,7 @@ def create_app(test_config=None):
         app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
             "connect_args": {"connect_timeout": settings.db_connect_timeout_seconds}
         }
+    _ensure_sqlite_parent(app.config["SQLALCHEMY_DATABASE_URI"])
     db.init_app(app)
     register_routes(app)
 
@@ -35,6 +38,16 @@ def create_app(test_config=None):
             except Exception:
                 pass
     return app
+
+
+def _ensure_sqlite_parent(database_url: str) -> None:
+    if not database_url.startswith("sqlite:///"):
+        return
+    raw_path = database_url.replace("sqlite:///", "", 1)
+    if raw_path == ":memory:":
+        return
+    path = Path(urlparse(raw_path).path or raw_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
 
 
 app = create_app()
