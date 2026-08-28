@@ -39,7 +39,7 @@ ollama serve
 
 Key variables in `.env`:
 
-- `DATABASE_URL`: defaults to `sqlite:///data/app.db` for a single-service demo.
+- `DATABASE_URL`: defaults to `sqlite:///data/app.db` locally; Render uses `sqlite:////tmp/lenny_growth/app.db`.
 - `LLM_PROVIDER`: `ollama`, `groq`, or `mock`.
 - `GROQ_API_KEY`, `GROQ_BASE_URL`, `GROQ_FAST_MODEL`, `GROQ_MAIN_MODEL`.
 - `OLLAMA_BASE_URL`, `OLLAMA_FAST_MODEL`, `OLLAMA_MAIN_MODEL`.
@@ -73,7 +73,7 @@ This repo includes `render.yaml`. On Render, use one Web Service only:
 - Start command: `gunicorn app:app`
 - Environment variables: `GROQ_API_KEY`, `GROQ_FAST_MODEL`, `GROQ_MAIN_MODEL`
 
-No separate Render PostgreSQL service is required for the simple demo setup. Sessions are stored in SQLite at `data/app.db`; this is easiest for evaluation, but redeploys may reset local app storage.
+No separate Render PostgreSQL service is required for the simple demo setup. Sessions are stored in SQLite under `/tmp` on Render; this is easiest for evaluation, but redeploys or restarts can reset session storage.
 
 Render's Flask guide recommends Gunicorn with `gunicorn app:app`.
 
@@ -148,4 +148,4 @@ python -m pytest tests
 - Missing FAISS index: run `python -m rag.ingestion`.
 - Ollama connection failure: run `ollama serve` and pull the configured models.
 - Groq failure: verify `GROQ_API_KEY` and configured model names.
-- Database failure: verify `DATABASE_URL`. The simple default is SQLite at `sqlite:///data/app.db`.
+- Database failure: verify `DATABASE_URL`. The simple local default is SQLite at `sqlite:///data/app.db`; Render should use `sqlite:////tmp/lenny_growth/app.db`.

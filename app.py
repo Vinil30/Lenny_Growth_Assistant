@@ -22,6 +22,7 @@ def create_app(test_config=None):
     _ensure_sqlite_parent(app.config["SQLALCHEMY_DATABASE_URI"])
     db.init_app(app)
     register_routes(app)
+    _install_db_initializer(app)
 
     @app.get("/")
     def index():
@@ -54,6 +55,20 @@ def _ensure_sqlite_parent(database_url: str) -> None:
         return
     path = Path(urlparse(raw_path).path or raw_path)
     path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def _install_db_initializer(app):
+    state = {"done": False}
+
+    @app.before_request
+    def ensure_db_ready():
+        if state["done"] or not app.config.get("AUTO_CREATE_DB", settings.auto_create_db):
+            return
+        try:
+            db.create_all()
+            state["done"] = True
+        except Exception:
+            state["done"] = False
 
 
 app = create_app()
