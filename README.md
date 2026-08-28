@@ -28,22 +28,35 @@ if (!(Test-Path .env)) { Copy-Item .env.example .env }; python -m pip install -r
 
 Then open [http://localhost:5000](http://localhost:5000). For Groq mode, put your real `GROQ_API_KEY` in `.env` before asking the app a question.
 
-Manual setup steps:
+Preferred local setup:
 
-```bash
-pip install -r requirements.txt
+```powershell
+# 1. Create the local environment file.
 Copy-Item .env.example .env
-python -m rag.ingestion
-python -c "from app import create_app; from models import db; app=create_app(); app.app_context().push(); db.create_all()"
-```
 
-Pull local models for Ollama:
+# 2. Edit .env and choose one provider.
+#    Groq: set GROQ_API_KEY and keep LLM_PROVIDER=groq.
+#    Ollama: set LLM_PROVIDER=ollama.
 
-```bash
+# 3. Install Python dependencies.
+python -m pip install -r requirements.txt
+
+# 4. If using Ollama, pull and start the local models.
 ollama pull llama3.2:3b
 ollama pull llama3.1:8b
 ollama serve
+
+# 5. In a new terminal, build the transcript index.
+python -m rag.ingestion
+
+# 6. Initialize the SQLite tables.
+python -c "from app import create_app; from models import db; app=create_app(); app.app_context().push(); db.create_all()"
+
+# 7. Start the app.
+python app.py
 ```
+
+Open [http://localhost:5000](http://localhost:5000).
 
 ## Environment
 
