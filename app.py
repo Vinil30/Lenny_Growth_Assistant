@@ -27,6 +27,12 @@ def create_app(test_config=None):
     def index():
         return render_template("index.html")
 
+    @app.get("/<path:path>")
+    def browser_fallback(path):
+        if path.startswith("api/"):
+            return jsonify({"error": "Not found."}), 404
+        return render_template("index.html")
+
     @app.errorhandler(404)
     def not_found(_):
         return jsonify({"error": "Not found."}), 404
