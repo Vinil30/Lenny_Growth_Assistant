@@ -20,6 +20,16 @@ The original DOCX names FastAPI and example cloud providers, while the implement
 
 ## Setup
 
+One-command local setup and start on Windows PowerShell:
+
+```powershell
+if (!(Test-Path .env)) { Copy-Item .env.example .env }; python -m pip install -r requirements.txt; python -m rag.ingestion; python -c "from app import create_app; from models import db; app=create_app(); app.app_context().push(); db.create_all()"; python app.py
+```
+
+Then open [http://localhost:5000](http://localhost:5000). For Groq mode, put your real `GROQ_API_KEY` in `.env` before asking the app a question.
+
+Manual setup steps:
+
 ```bash
 pip install -r requirements.txt
 Copy-Item .env.example .env
@@ -84,7 +94,7 @@ Set:
 ```env
 LLM_PROVIDER=groq
 GROQ_API_KEY=...
-GROQ_FAST_MODEL=openai/gpt-oss-20b
+GROQ_FAST_MODEL=openai/gpt-oss-120b
 GROQ_MAIN_MODEL=openai/gpt-oss-120b
 ```
 
@@ -126,8 +136,8 @@ Unit tests do not require live Groq, Ollama, FAISS index files, or PostgreSQL.
 Latest local verification:
 
 ```text
-python -m pytest tests
-9 passed
+python -m pytest
+13 passed
 ```
 
 ## Manual UI Test Plan
