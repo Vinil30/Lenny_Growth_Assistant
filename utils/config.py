@@ -33,7 +33,7 @@ class Settings:
     llm_provider: str = os.getenv("LLM_PROVIDER", "ollama").lower()
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
     groq_base_url: str = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
-    groq_fast_model: str = os.getenv("GROQ_FAST_MODEL", "openai/gpt-oss-20b")
+    groq_fast_model: str = os.getenv("GROQ_FAST_MODEL", "openai/gpt-oss-120b")
     groq_main_model: str = os.getenv("GROQ_MAIN_MODEL", "openai/gpt-oss-120b")
     ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     ollama_fast_model: str = os.getenv("OLLAMA_FAST_MODEL", "llama3.2:3b")

@@ -52,6 +52,118 @@ function avatarSVG(role) {
   return `<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="currentColor"/></svg>`;
 }
 
+function escapeHTML(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function stripArtifact(content) {
+  return content.replace(/<artifact[\s\S]*?<\/artifact>/g, "").trim();
+}
+
+function formatInline(value) {
+  return escapeHTML(value)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+}
+
+function isTableDivider(line) {
+  return /^\s*\|?[\s:-]+\|[\s|:-]+\|?\s*$/.test(line);
+}
+
+function renderTable(lines, startIndex) {
+  if (!lines[startIndex]?.includes("|") || !isTableDivider(lines[startIndex + 1] || "")) return null;
+  const rows = [];
+  let i = startIndex;
+  while (i < lines.length && lines[i].includes("|") && lines[i].trim()) {
+    if (!isTableDivider(lines[i])) {
+      rows.push(lines[i].trim().replace(/^\||\|$/g, "").split("|").map(cell => cell.trim()));
+    }
+    i += 1;
+  }
+  if (!rows.length) return null;
+  const [head, ...body] = rows;
+  const thead = `<thead><tr>${head.map(cell => `<th>${formatInline(cell)}</th>`).join("")}</tr></thead>`;
+  const tbody = `<tbody>${body.map(row => `<tr>${row.map(cell => `<td>${formatInline(cell)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  return { html: `<div class="md-table-wrap"><table>${thead}${tbody}</table></div>`, nextIndex: i };
+}
+
+function renderMarkdown(markdown) {
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  const html = [];
+  let listType = null;
+
+  function closeList() {
+    if (!listType) return;
+    html.push(`</${listType}>`);
+    listType = null;
+  }
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (!trimmed) {
+      closeList();
+      continue;
+    }
+
+    const table = renderTable(lines, i);
+    if (table) {
+      closeList();
+      html.push(table.html);
+      i = table.nextIndex - 1;
+      continue;
+    }
+
+    const heading = trimmed.match(/^(#{1,4})\s+(.+)$/);
+    if (heading) {
+      closeList();
+      const level = Math.min(heading[1].length + 1, 4);
+      html.push(`<h${level}>${formatInline(heading[2])}</h${level}>`);
+      continue;
+    }
+
+    const quote = trimmed.match(/^>\s+(.+)$/);
+    if (quote) {
+      closeList();
+      html.push(`<blockquote>${formatInline(quote[1])}</blockquote>`);
+      continue;
+    }
+
+    const bullet = trimmed.match(/^[-*]\s+(.+)$/);
+    if (bullet) {
+      if (listType !== "ul") {
+        closeList();
+        listType = "ul";
+        html.push("<ul>");
+      }
+      html.push(`<li>${formatInline(bullet[1])}</li>`);
+      continue;
+    }
+
+    const numbered = trimmed.match(/^\d+[.)]\s+(.+)$/);
+    if (numbered) {
+      if (listType !== "ol") {
+        closeList();
+        listType = "ol";
+        html.push("<ol>");
+      }
+      html.push(`<li>${formatInline(numbered[1])}</li>`);
+      continue;
+    }
+
+    closeList();
+    html.push(`<p>${formatInline(trimmed)}</p>`);
+  }
+  closeList();
+  return html.join("");
+}
+
 function renderMessage(role, content, citations = []) {
   const el = document.createElement("article");
   el.className = `message ${role}`;
@@ -65,22 +177,16 @@ function renderMessage(role, content, citations = []) {
   body.className = "msg-body";
 
   const text = document.createElement("div");
-  text.textContent = content.replace(/<artifact[\s\S]*?<\/artifact>/g, "").trim();
+  const visibleContent = stripArtifact(content);
+  text.className = role === "assistant" ? "markdown" : "plain-message";
+  text.innerHTML = role === "assistant" ? renderMarkdown(visibleContent) : escapeHTML(visibleContent);
   body.appendChild(text);
 
-  if (citations.length) {
-    const list = document.createElement("div");
-    list.className = "citations";
-    citations.forEach(c => {
-      const chip = document.createElement("div");
-      chip.className = "citation-chip";
-      const title = c.episode || c.episode_id;
-      const guest = c.guest ? `, ${c.guest}` : "";
-      const turns = c.turn_range?.join("–") || "";
-      chip.innerHTML = `<span>${title}${guest}</span>${turns ? `<span class="turns">turns ${turns}</span>` : ""}${c.url ? ` <a href="${c.url}" target="_blank" rel="noreferrer">source</a>` : ""}`;
-      list.appendChild(chip);
-    });
-    body.appendChild(list);
+  if (role === "assistant" && citations.length) {
+    const note = document.createElement("div");
+    note.className = "source-note";
+    note.textContent = `Answered from Lenny transcript evidence (${citations.length} sources).`;
+    body.appendChild(note);
   }
 
   if (role === "assistant") {
@@ -89,7 +195,7 @@ function renderMessage(role, content, citations = []) {
     copyBtn.type = "button";
     copyBtn.textContent = "Copy";
     copyBtn.onclick = async () => {
-      await navigator.clipboard.writeText(text.textContent);
+      await navigator.clipboard.writeText(visibleContent);
       copyBtn.textContent = "Copied";
       copyBtn.classList.add("copied");
       setTimeout(() => { copyBtn.textContent = "Copy"; copyBtn.classList.remove("copied"); }, 1400);
@@ -157,7 +263,7 @@ async function loadSessions() {
   });
 }
 
-function setArtifact(content) {
+function setArtifact(content, options = {}) {
   if (!content) {
     frame.classList.remove("is-loaded");
     artifactEmpty.classList.remove("is-hidden");
@@ -173,6 +279,10 @@ function setArtifact(content) {
   frame.classList.remove("is-loaded");
   frame.srcdoc = content;
   frame.onload = () => frame.classList.add("is-loaded");
+  if (options.open) {
+    artifactPane.classList.add("is-open");
+    artifactPane.setAttribute("aria-hidden", "false");
+  }
 }
 
 artifactToggle.onclick = () => {
@@ -224,11 +334,11 @@ document.querySelector("#chatForm").onsubmit = async (event) => {
     loading.remove();
     renderMessage("assistant", result.answer, result.citations);
     if (result.artifact) {
-      setArtifact(result.artifact.content);
+      setArtifact(result.artifact.content, { open: true });
       artifactToggle.textContent = "View artifact";
     }
   } catch (err) {
-    loading.querySelector(".msg-body").innerHTML = `<span style="color:#a8551c">${err.message}</span>`;
+    loading.querySelector(".msg-body").innerHTML = `<span class="error-text">${escapeHTML(err.message)}</span>`;
   } finally {
     sendBtn.disabled = false;
     sendBtn.classList.remove("is-sending");

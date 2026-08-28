@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from app import create_app, _ensure_sqlite_parent, _normalize_sqlite_database_url
 from models import db
+from services.artifact import detect_artifact_request
 
 
 def app_client():
@@ -49,3 +50,8 @@ def test_file_sqlite_sessions_work():
 def test_static_assets_are_not_empty():
     assert Path("static/js/app.js").stat().st_size > 0
     assert Path("static/css/app.css").stat().st_size > 0
+
+
+def test_artifact_detection_for_strategy_prompts():
+    assert detect_artifact_request("Summarize this into a product strategy framework") == "html"
+    assert detect_artifact_request("Give me a no artifact summary") is None

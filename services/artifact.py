@@ -4,10 +4,14 @@ from html import escape
 
 def detect_artifact_request(text: str) -> str | None:
     q = text.lower()
+    if "no artifact" in q or "without artifact" in q:
+        return None
     if "html" in q and ("artifact" in q or "generate" in q or "create" in q):
         return "html"
     if "markdown" in q or "artifact" in q:
         return "markdown"
+    if any(word in q for word in ("compare", "framework", "plan", "strategy", "prioritize", "summary", "summarize", "organize", "organise")):
+        return "html"
     return None
 
 

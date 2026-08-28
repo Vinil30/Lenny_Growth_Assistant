@@ -9,7 +9,10 @@ from utils.logging import timed
 
 SYSTEM = """You are The Lenny Growth Assistant. Answer using only the supplied podcast evidence.
 If evidence is insufficient, say so. Distinguish your own synthesis from transcript-grounded claims.
-Include concise source references by episode/guest. Do not invent claims."""
+Write clean Markdown: short title, compact sections, bullets or numbered steps, and no Markdown tables.
+Use bold only for key labels, not whole sentences. Do not show raw citation dumps at the end.
+Mention sources naturally in the text when useful, such as "Elizabeth Stone's Netflix episode".
+Do not invent claims."""
 
 SHIP30 = """Create a Ship 30 for 30-style essay of about 1,250 words: strong hook,
 clear narrative progression, skimmable headings, a few bullets, selective bold emphasis,
@@ -50,15 +53,21 @@ class ChatService:
         context_text = "\n\n".join(f"[Source {i+1}] {c['citation']}\n{c['text']}" for i, c in enumerate(rag["contexts"]))
         style = SHIP30 if "ship 30" in message.lower() or "essay" in message.lower() else ""
         artifact_kind = detect_artifact_request(message)
+        if artifact_kind is None and len(message.split()) >= 5 and "no artifact" not in message.lower():
+            artifact_kind = "html"
         artifact_instruction = ""
         if artifact_kind == "html":
-            artifact_instruction = "Also produce one complete HTML/CSS artifact after the answer inside <artifact kind=\"html\">...</artifact>."
+            artifact_instruction = """
+Also produce one complete, self-contained HTML/CSS artifact after the answer inside <artifact kind="html">...</artifact>.
+Make the artifact the best way to consume the answer: a polished one-page briefing with clear cards, source badges, key takeaways, a decision framework, and next actions when relevant.
+Use only HTML and CSS. Do not include scripts, external assets, iframes, or Markdown fences.
+"""
         elif artifact_kind == "markdown":
-            artifact_instruction = "Also produce one Markdown artifact after the answer inside <artifact kind=\"markdown\">...</artifact>."
+            artifact_instruction = "Also produce one clean Markdown artifact after the answer inside <artifact kind=\"markdown\">...</artifact>."
         prompt = f"{SYSTEM}\n{style}\nConversation history: {history[-6:]}\nEvidence:\n{context_text or 'No podcast evidence retrieved.'}\nUser: {message}\n{artifact_instruction}"
         try:
             with timed(timings, "llm"):
-                answer = self.llm.generate(prompt, fast=False, max_tokens=2200 if style else 1000)
+                answer = self.llm.generate(prompt, fast=False, max_tokens=3600 if artifact_kind or style else 1300)
         except LLMError as exc:
             answer = f"I could not reach the configured LLM provider ({self.llm.name}): {exc}"
         artifact = self._extract_artifact(session_id, answer, artifact_kind)
