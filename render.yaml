@@ -3,7 +3,7 @@ services:
     name: lenny-growth-assistant
     runtime: python
     buildCommand: pip install -r requirements.txt && python -m rag.ingestion
-    startCommand: gunicorn app:app
+    startCommand: mkdir -p /tmp/lenny_growth && gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9

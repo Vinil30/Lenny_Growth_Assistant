@@ -1,6 +1,6 @@
 from flask import Flask, render_template, jsonify
 from pathlib import Path
-from urllib.parse import urlparse
+from sqlalchemy.engine import make_url
 from models import db
 from routes import register_routes
 from utils.config import settings
@@ -15,6 +15,9 @@ def create_app(test_config=None):
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     if test_config:
         app.config.update(test_config)
+    app.config["SQLALCHEMY_DATABASE_URI"] = _normalize_sqlite_database_url(
+        app.config["SQLALCHEMY_DATABASE_URI"], app.root_path
+    )
     if app.config["SQLALCHEMY_DATABASE_URI"].startswith("postgresql"):
         app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
             "connect_args": {"connect_timeout": settings.db_connect_timeout_seconds}
@@ -43,18 +46,37 @@ def create_app(test_config=None):
             try:
                 db.create_all()
             except Exception:
-                pass
+                app.logger.exception("Database initialization failed during startup.")
     return app
 
 
+def _normalize_sqlite_database_url(database_url: str, base_path: str) -> str:
+    try:
+        url = make_url(database_url)
+    except Exception:
+        return database_url
+    if url.drivername.split("+", 1)[0] != "sqlite":
+        return database_url
+    raw_path = url.database
+    if not raw_path or raw_path == ":memory:":
+        return database_url
+    path = Path(raw_path)
+    if not path.is_absolute():
+        path = Path(base_path) / path
+    return f"sqlite:///{path.as_posix()}"
+
+
 def _ensure_sqlite_parent(database_url: str) -> None:
-    if not database_url.startswith("sqlite:///"):
+    try:
+        url = make_url(database_url)
+    except Exception:
         return
-    raw_path = database_url.replace("sqlite:///", "", 1)
-    if raw_path == ":memory:":
+    if url.drivername.split("+", 1)[0] != "sqlite":
         return
-    path = Path(urlparse(raw_path).path or raw_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
+    raw_path = url.database
+    if not raw_path or raw_path == ":memory:":
+        return
+    Path(raw_path).parent.mkdir(parents=True, exist_ok=True)
 
 
 def _install_db_initializer(app):
@@ -68,6 +90,7 @@ def _install_db_initializer(app):
             db.create_all()
             state["done"] = True
         except Exception:
+            app.logger.exception("Database initialization failed before request.")
             state["done"] = False
 
 
